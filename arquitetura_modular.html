@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arquitetura Modular — Sistema Adaptativo</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f8f9fc;
+    --surface2: #eef0f7;
+    --border: #d4d8e8;
+    --border2: #b8bdd4;
+    --text: #1a1d2e;
+    --muted: #7a80a0;
+    --m1: #4f8ef7;   /* azul  — módulo 1 */
+    --m2: #f7974f;   /* laranja — módulo 2 */
+    --m3: #e05c7a;   /* vermelho — módulo 3 */
+    --m4: #7c5cf7;   /* roxo — módulo 4 */
+    --m5: #4fca8e;   /* verde — módulo 5 */
+    --m6: #f7c84f;   /* amarelo — módulo 6 */
+    --conn: #9aa0be;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text);
+    min-height: 100vh;
+    padding: 48px 28px 72px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* ── HEADER ── */
+  header {
+    text-align: center;
+    margin-bottom: 52px;
+  }
+  header h1 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  header h2 {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+  header p {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* ── LAYOUT PRINCIPAL ── */
+  .layout {
+    width: 100%;
+    max-width: 960px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    align-items: center;
+  }
+
+  /* ── MAIN.PY (orquestrador) ── */
+  .orchestrator {
+    width: 100%;
+    background: var(--surface);
+    border: 1.5px solid var(--border2);
+    border-radius: 10px;
+    padding: 20px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+  }
+
+  .orch-left { flex: 1; }
+  .orch-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .orch-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .orch-desc {
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .orch-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 4px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    background: var(--surface2);
+    white-space: nowrap;
+  }
+
+  /* ── SETA VERTICAL ── */
+  .v-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 4px 0;
+  }
+  .v-arrow .vline {
+    width: 1.5px;
+    height: 22px;
+    background: var(--conn);
+  }
+  .v-arrow .vhead {
+    width: 0; height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 7px solid var(--conn);
+  }
+  .v-arrow .vlabel {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8.5px;
+    color: var(--muted);
+    background: var(--bg);
+    padding: 1px 8px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    margin: 3px 0;
+    letter-spacing: 0.04em;
+  }
+
+  /* ── GRID DE MÓDULOS ── */
+  .modules-grid {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+
+  /* ── MÓDULO ── */
+  .module {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 18px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    transition: border-color 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .module::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 3px;
+    border-radius: 10px 10px 0 0;
+  }
+
+  .module.m1::before { background: var(--m1); }
+  .module.m2::before { background: var(--m2); }
+  .module.m3::before { background: var(--m3); }
+  .module.m4::before { background: var(--m4); }
+  .module.m5::before { background: var(--m5); }
+  .module.m6::before { background: var(--m6); }
+
+  .mod-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    gap: 8px;
+  }
+
+  .mod-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+
+  .module.m1 .mod-number { background: #4f8ef720; color: var(--m1); }
+  .module.m2 .mod-number { background: #f7974f20; color: var(--m2); }
+  .module.m3 .mod-number { background: #e05c7a20; color: var(--m3); }
+  .module.m4 .mod-number { background: #7c5cf720; color: var(--m4); }
+  .module.m5 .mod-number { background: #4fca8e20; color: var(--m5); }
+  .module.m6 .mod-number { background: #f7c84f20; color: var(--m6); }
+
+  .mod-file {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    background: var(--surface2);
+    padding: 2px 7px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+
+  .mod-title {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+    line-height: 1.35;
+  }
+
+  .mod-desc {
+    font-size: 10.5px;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 12px;
+    flex: 1;
+  }
+
+  /* funções */
+  .mod-functions {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+    margin-top: auto;
+  }
+
+  .fn-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .fn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 4px 9px;
+    border-radius: 5px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .fn-in  { color: #4f8ef7; font-size: 8px; }
+  .fn-out { color: #4fca8e; font-size: 8px; }
+
+  .fn-name { flex: 1; }
+
+  .fn-arrow {
+    font-size: 8.5px;
+    color: var(--muted);
+  }
+
+  .fn-ret {
+    font-size: 9px;
+    color: var(--m5);
+  }
+
+  /* ── SEÇÃO DE INTEGRAÇÃO ── */
+  .integration {
+    width: 100%;
+    margin-top: 40px;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 22px 28px;
+  }
+
+  .int-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  .pipeline {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+
+  .pipe-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .pipe-box {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 5px;
+    border: 1.5px solid;
+    white-space: nowrap;
+  }
+
+  .pipe-fn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .pipe-arrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--conn);
+    padding: 0 6px;
+    margin-top: -8px;
+  }
+
+  .pipe-step.m1 .pipe-box { border-color: var(--m1); color: var(--m1); background: #4f8ef710; }
+  .pipe-step.m2 .pipe-box { border-color: var(--m2); color: var(--m2); background: #f7974f10; }
+  .pipe-step.m3 .pipe-box { border-color: var(--m3); color: var(--m3); background: #e05c7a10; }
+  .pipe-step.m4 .pipe-box { border-color: var(--m4); color: var(--m4); background: #7c5cf710; }
+  .pipe-step.m5 .pipe-box { border-color: var(--m5); color: var(--m5); background: #4fca8e10; }
+  .pipe-step.m6 .pipe-box { border-color: var(--m6); color: var(--m6); background: #f7c84f10; }
+
+  /* ── DATA FLOW ── */
+  .dataflow {
+    width: 100%;
+    margin-top: 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 14px 16px;
+  }
+
+  .df-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .df-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .df-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+  }
+
+  .df-from { color: var(--muted); min-width: 130px; }
+  .df-arr  { color: var(--conn); }
+  .df-to   { color: var(--muted); min-width: 130px; }
+  .df-var  { color: var(--text); padding: 1px 8px; border-radius: 3px; background: var(--surface); border: 1px solid var(--border); }
+
+  footer {
+    margin-top: 44px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Arquitetura Modular · Python</h1>
+  <h2>Sistema Adaptativo de Materiais Educacionais</h2>
+  <p>Divisão de responsabilidades por módulo e funções principais</p>
+</header>
+
+<div class="layout">
+
+  <!-- ORQUESTRADOR -->
+  <div class="orchestrator">
+    <div class="orch-left">
+      <div class="orch-tag">Ponto de entrada</div>
+      <div class="orch-title">main.py</div>
+      <div class="orch-desc">Orquestrador principal. Chama cada módulo em sequência, gerencia o fluxo de dados entre eles e expõe a interface ao usuário (CLI ou integração Moodle).</div>
+    </div>
+    <div class="orch-badge">run_pipeline(student_id)</div>
+  </div>
+
+  <div class="v-arrow">
+    <div class="vline"></div>
+    <div class="vlabel">importa e chama</div>
+    <div class="vline"></div>
+    <div class="vhead"></div>
+  </div>
+
+  <!-- MÓDULOS -->
+  <div class="modules-grid">
+
+    <!-- M1 -->
+    <div class="module m1">
+      <div class="mod-header">
+        <span class="mod-number">M1</span>
+        <span class="mod-file">questionnaire.py</span>
+      </div>
+      <div class="mod-title">Questionário Felder-Silverman</div>
+      <div class="mod-desc">Aplica o ILS reduzido, coleta as respostas do aluno e retorna o perfil de aprendizagem nas 4 dimensões.</div>
+      <div class="mod-functions">
+        <div class="fn-label">Funções</div>
+        <div class="fn">
+          <span class="fn-name">load_questions()</span>
+          <span class="fn-arrow">→</span>
+          <span class="fn-ret">list[dict]</span>
+        </div>
+        <div class="fn">
+          <span class="fn-name">apply_questionnaire()</span>
+          <span class="fn-arrow">→</span>
+          <span class="fn-ret">dict</span>
+        </div>
+        <div class="fn">
+          <span class="fn-name">compute_profile(answers)</span>
+          <span class="fn-arrow">→</span>
+          <span class="fn-ret">LearningProfile</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- M2 -->
+    <div class="module m2">
+      <div class="mod-header">
+        <span class="mod-number">M2</span>
+        <span class="mod-file">profile.py</span>
+      </div>
+      <div class="mod-title">Perfil de Aprendizagem</div>
+      <div class="mod-desc">Define e persiste o modelo de dados do perfil do aluno. Salva e carrega perfis para evitar reaplicação do questionário.</div>
+      <div class="mod-functions">
+        <div class="fn-label">Funções</div>
+        <div class="fn">
+          <span class="fn-name">save_profile(profile, id)</span>
+          <span class="fn-arrow">→</span>
+          <span class="fn-ret">None</span>
+        </div>
+        <div class="fn">
+          <span class="fn-name">load_profile(student_id)</span>
+          <span class="fn-arrow">→</span>
+          <span class="fn-ret">LearningProfile</span>
+        </div>
+        <div class="fn">
+          <span class="fn-name">profile_exists(student_id)</span>
+          <span class="fn-arrow">→</span>
+          <span class="fn-ret">bool</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- M3 -->
+    <div class="module m3">
+      <div class="mod-header">
+        <span class="mod-number">M3</span>
+        <span class="mod-file">content_loader.py</span>
+      </div>
+      <div class="mod-title">Carregamento de Conteúdo</div>
+      <div class="mod-desc">Recupera o material base do repositório (Moodle/pasta local). Converte PDFs e slides em texto estruturado para uso pela LLM.</div>
+      <div class="mod-functions">
+        <div class="fn-label">Funções</div>
+        <div class="fn">
+          <span class="fn-name">list_topics()</span>
+          <span class="fn-arrow">→</span>
+          <span class="fn-ret">list[str]</span>
+        </div>
+        <div class="fn">
+          <span class="fn-name">load_content(topic)</span>
+          <span class="fn-arrow">→</span>
+          <span class="fn-ret">str</span>
+        </div>
+        <div class="fn">
+          <span class="fn-name">parse_pdf(path)</span>
+          <span class="fn-arrow">→</span>
+          <span class="fn-ret">str</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- M4 -->
+    <div class="module m4">
+      <div class="mod-header">
+        <span class="mod-number">M4</span>
+        <span class="mod-file">indexer.py</span>
+      </div>
+      <div class="mod-title">Indexação do Conteúdo</div>
+      <div class="mod-desc">Usa PageIndex para construir o índice hierárquico em árvore do material. Recupera apenas as seções relevantes ao tema escolhido.</div>
+      <div class="mod-functions">
+        <div class="fn-label">Funções</div>
+        <div class="fn">
+          <span class="fn-name">build_index(content)</span>
+          <span class="fn-arrow">→</span>
+          <span class="fn-ret">PageIndex</span>
+        </div>
+        <div class="fn">
+          <span class="fn-name">retrieve_sections(idx, topic)</span>
+          <span class="fn-arrow">→</span>
+          <span class="fn-ret">str</span>
+        </div>
+        <div class="fn">
+          <span class="fn-name">cache_index(topic, idx)</span>
+          <span class="fn-arrow">→</span>
+          <span class="fn-ret">None</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- M5 -->
+    <div class="module m5">
+      <div class="mod-header">
+        <span class="mod-number">M5</span>
+        <span class="mod-file">adapter.py</span>
+      </div>
+      <div class="mod-title">Adaptação via LLM</div>
+      <div class="mod-desc">Núcleo do sistema. Monta o prompt com o perfil e o conteúdo, chama a LLM e retorna o material adaptado ao estilo do aluno.</div>
+      <div class="mod-functions">
+        <div class="fn-label">Funções</div>
+        <div class="fn">
+          <span class="fn-name">build_prompt(profile, content)</span>
+          <span class="fn-arrow">→</span>
+          <span class="fn-ret">str</span>
+        </div>
+        <div class="fn">
+          <span class="fn-name">call_llm(prompt)</span>
+          <span class="fn-arrow">→</span>
+          <span class="fn-ret">str</span>
+        </div>
+        <div class="fn">
+          <span class="fn-name">adapt_content(profile, content)</span>
+          <span class="fn-arrow">→</span>
+          <span class="fn-ret">str</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- M6 -->
+    <div class="module m6">
+      <div class="mod-header">
+        <span class="mod-number">M6</span>
+        <span class="mod-file">output.py</span>
+      </div>
+      <div class="mod-title">Entrega do Material</div>
+      <div class="mod-desc">Formata e entrega o conteúdo adaptado ao aluno. Gera saída em HTML, Markdown ou PDF e registra logs de uso para avaliação.</div>
+      <div class="mod-functions">
+        <div class="fn-label">Funções</div>
+        <div class="fn">
+          <span class="fn-name">render_html(text)</span>
+          <span class="fn-arrow">→</span>
+          <span class="fn-ret">str</span>
+        </div>
+        <div class="fn">
+          <span class="fn-name">export_pdf(text, path)</span>
+          <span class="fn-arrow">→</span>
+          <span class="fn-ret">None</span>
+        </div>
+        <div class="fn">
+          <span class="fn-name">log_session(student, topic)</span>
+          <span class="fn-arrow">→</span>
+          <span class="fn-ret">None</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /modules-grid -->
+
+  <!-- INTEGRAÇÃO / PIPELINE -->
+  <div class="integration">
+    <div class="int-title">Pipeline de Execução — main.py · run_pipeline(student_id)</div>
+    <div class="pipeline">
+
+      <div class="pipe-step m2">
+        <div class="pipe-box">profile.py</div>
+        <div class="pipe-fn">profile_exists()</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+
+      <div class="pipe-step m1">
+        <div class="pipe-box">questionnaire.py</div>
+        <div class="pipe-fn">apply_questionnaire()</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+
+      <div class="pipe-step m2">
+        <div class="pipe-box">profile.py</div>
+        <div class="pipe-fn">save_profile()</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+
+      <div class="pipe-step m3">
+        <div class="pipe-box">content_loader.py</div>
+        <div class="pipe-fn">load_content(topic)</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+
+      <div class="pipe-step m4">
+        <div class="pipe-box">indexer.py</div>
+        <div class="pipe-fn">retrieve_sections()</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+
+      <div class="pipe-step m5">
+        <div class="pipe-box">adapter.py</div>
+        <div class="pipe-fn">adapt_content()</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+
+      <div class="pipe-step m6">
+        <div class="pipe-box">output.py</div>
+        <div class="pipe-fn">render_html()</div>
+      </div>
+
+    </div>
+
+    <!-- DATA FLOW -->
+    <div class="dataflow">
+      <div class="df-title">Fluxo de dados entre módulos</div>
+      <div class="df-rows">
+        <div class="df-row">
+          <span class="df-from">questionnaire.py</span>
+          <span class="df-arr">──→</span>
+          <span class="df-to">profile.py</span>
+          <span class="df-var">LearningProfile(ativo, visual, sensorial, global)</span>
+        </div>
+        <div class="df-row">
+          <span class="df-from">profile.py</span>
+          <span class="df-arr">──→</span>
+          <span class="df-to">adapter.py</span>
+          <span class="df-var">profile: LearningProfile</span>
+        </div>
+        <div class="df-row">
+          <span class="df-from">content_loader.py</span>
+          <span class="df-arr">──→</span>
+          <span class="df-to">indexer.py</span>
+          <span class="df-var">raw_content: str</span>
+        </div>
+        <div class="df-row">
+          <span class="df-from">indexer.py</span>
+          <span class="df-arr">──→</span>
+          <span class="df-to">adapter.py</span>
+          <span class="df-var">relevant_sections: str</span>
+        </div>
+        <div class="df-row">
+          <span class="df-from">adapter.py</span>
+          <span class="df-arr">──→</span>
+          <span class="df-to">output.py</span>
+          <span class="df-var">adapted_text: str</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /layout -->
+
+<footer>Sistema Adaptativo · Mestrado em Computação · UFMA · Python 3.11+</footer>
+
+</body>
+</html>
