@@ -1,5 +1,14 @@
 # Histórico do Projeto (Changelog)
 
+## [2026-03-20] - Limpeza de Dependências, 16 Prompts Matemáticos e Fluxo Completo Ativo
+### Adicionado
+- **Arquitetura de Prompts Isolados**: Criado o módulo `prompts_adaptacao.py` que gera precisamente 16 combinações de prompts exatos e fechados, cobrindo todo o modelo Felder-Silverman. Isso possibilita ao sistema escolher matematicamente a instrução perfeita baseada na tupla do aluno sem escrever enormes templates redundantes em `rewrite.py`.
+- Finalização da liberação do código em `main.py`, efetivando oficialmente as etapas iterativas conectadas de leitura -> perfilamento -> LLM para PDF.
+
+### Removido
+- Removido o longo e obsoleto script `assuntos_llm.py` que fragmentava páginas de pdf em um método ineficiente antigo.
+- Deletado arquivo temporário/ruído `projeto.py` que engessava as simulações e duplicava códigos principais.
+
 ## [2026-03-20] - Refatoração do Motor de Extração e Seleção
 ### Adicionado
 - Nova funcionalidade de parsing dinâmico de assuntos do sistema pela LLM (Google Gemini) diretamente no arquivo `seletor_conteudo.py`.

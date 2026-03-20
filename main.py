@@ -53,22 +53,23 @@ if __name__ == "__main__":
     from rewrite import adaptar_material
     from gerador_pdf import gerar_pdf
 
-    # ── Etapa 1: Questionário ─────────────────────────────────────
+    # ── Etapa 1: Questionário JÁ TESTADO
     respostas = aplicar_questionario()
     dimensoes = mapear_dimensoes(respostas)
     exibir_resultado(dimensoes)
 
 
-    # Etapa 1 - Profiler
+    # Etapa 1 - Profiler JÁ TESTADO
     print("\nGerando seu perfil de aprendizagem...")
     perfil = get_student_profile(respostas, dimensoes)
     print(f"\n{perfil}\n")
 
-    # Etapa 2 - Leitura Completa do PDF
+    # Etapa 2 - Leitura Completa do PDF (VERIFICANDO AINDA)
     print("\nLendo todo o PDF e convertendo para Markdown...")
     caminho_conteudo_md = os.path.join(BASE_DIR, "conteudo.md")
     converter_pdf_para_md(CAMINHO_PDF, caminho_conteudo_md)
 
+    
     # Carrega todo o texto lido em memória para passar para a LLM
     with open(caminho_conteudo_md, "r", encoding="utf-8") as f_md:
         texto_completo = f_md.read()
