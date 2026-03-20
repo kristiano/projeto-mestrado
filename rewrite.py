@@ -1,10 +1,9 @@
 # rewrite.py
 # Adaptação do material didático ao perfil de aprendizagem do aluno
-# Adaptado de Vaccaro et al. (2025)
 
 import time
 from llm_config import criar_modelo
-
+from prompts_adaptacao import PROMPTS_ESPECIFICOS
 
 def adaptar_material(perfil: str, dimensoes: dict, assunto: str, texto: str) -> str:
     """
@@ -23,73 +22,37 @@ def adaptar_material(perfil: str, dimensoes: dict, assunto: str, texto: str) -> 
     print("\n***\nInicializando Rewrite:")
     start_time = time.time()
 
-    # System message do Rewrite
-    rewrite_sys_msg = (
-        "Você é um professor universitário experiente e didático, "
-        "especialista em adaptar materiais de ensino para diferentes "
-        "estilos de aprendizagem com base no modelo de Felder-Silverman.\n\n"
+    # Identifica a chave correta baseada no perfil gerado para recuperar o prompt específico
+    chave_perfil = (
+        dimensoes["processamento"], 
+        dimensoes["percepcao"], 
+        dimensoes["entrada"], 
+        dimensoes["compreensao"]
+    )
+    
+    # Resgata o prompt de sistema exclusivo para as configurações neurais deste usuário
+    prompt_base = PROMPTS_ESPECIFICOS.get(chave_perfil)
+    if not prompt_base:
+        raise ValueError(f"Prompt não encontrado para o perfil: {chave_perfil}")
 
-        "Você receberá:\n"
-        "- O perfil de aprendizagem do aluno\n"
-        "- As dimensões do estilo de aprendizagem identificadas\n"
-        "- O conteúdo original de um capítulo\n\n"
+    # Injeta o texto na variável {conteudo_bruto} descrita no template do prompt
+    prompt_final = prompt_base.replace("{conteudo_bruto}", texto[:8000])
 
-        "Sua tarefa é reescrever o conteúdo original adaptando-o "
-        "ao estilo de aprendizagem do aluno, seguindo estas diretrizes "
-        "para cada dimensão:\n\n"
-
-        "COMPREENSÃO:\n"
-        "- Sequencial: organize o conteúdo em etapas progressivas e "
-        "lógicas, com transições claras entre os tópicos.\n"
-        "- Global: comece com uma visão geral do assunto antes dos "
-        "detalhes, mostrando como os conceitos se conectam.\n\n"
-
-        "PERCEPÇÃO:\n"
-        "- Sensorial: use fatos concretos, dados, exemplos práticos "
-        "e aplicações do mundo real.\n"
-        "- Intuitivo: enfatize conceitos abstratos, teorias, padrões "
-        "e relações entre ideias.\n\n"
-
-        "ENTRADA:\n"
-        "- Visual: descreva gráficos, diagramas e tabelas com detalhes; "
-        "use analogias visuais e representações espaciais.\n"
-        "- Verbal: use explicações textuais detalhadas, listas e "
-        "descrições escritas claras.\n\n"
-
-        "PROCESSAMENTO:\n"
-        "- Ativo: inclua exemplos práticos, exercícios, situações para "
-        "aplicar o conhecimento e discussões em grupo.\n"
-        "- Reflexivo: inclua momentos de síntese, resumos, reflexões "
-        "e conexões com conhecimentos anteriores.\n\n"
-
-        "Instruções importantes:\n"
-        "- Mantenha a precisão e completude do conteúdo original\n"
-        "- Não invente informações que não estejam no texto original\n"
-        "- Use linguagem clara e adequada ao nível universitário\n"
-        "- O material adaptado deve ter estrutura organizada com "
-        "títulos e subtítulos\n"
-        "- Ao final, inclua um resumo dos pontos principais"
+    # Como o novo prompt já é muito forte e abrange as instruções de papel (Role),
+    # podemos usar uma instrução de sistema mais direta focada em como o assistente deve se portar:
+    system_message = (
+        "Você é um Especialista em Inteligência Artificial para Educação "
+        "e Design Instrucional.\n\n"
+        "Sua tarefa é seguir ESTRITAMENTE o metaprompt fornecido pelo usuário, "
+        "modificando a estrutura e os argumentos do texto base apenas conforme "
+        "as restrições do modelo Felder-Silverman injetadas."
     )
 
-    # User message com o perfil e o conteúdo
-    rewrite_user_msg = (
-        f"PERFIL DO ALUNO:\n{perfil}\n\n"
-        f"DIMENSÕES DE APRENDIZAGEM:\n"
-        f"- Compreensão  : {dimensoes['compreensao']}\n"
-        f"- Percepção    : {dimensoes['percepcao']}\n"
-        f"- Entrada      : {dimensoes['entrada']}\n"
-        f"- Processamento: {dimensoes['processamento']}\n\n"
-        f"ASSUNTO: {assunto}\n\n"
-        f"CONTEÚDO ORIGINAL:\n{texto[:8000]}\n\n"
-        f"Reescreva o conteúdo acima adaptado ao perfil de "
-        f"aprendizagem deste aluno."
-    )
+    # Cria o modelo
+    model = criar_modelo(system_instruction=system_message)
 
-    # Cria o modelo com o system message
-    model = criar_modelo(system_instruction=rewrite_sys_msg)
-
-    # Gera o material adaptado
-    response = model.generate_content(rewrite_user_msg)
+    # Executa a geração de inteligência artificial
+    response = model.generate_content(prompt_final)
     material_adaptado = response.text
 
     stop_time = time.time()

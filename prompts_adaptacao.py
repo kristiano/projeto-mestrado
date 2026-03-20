@@ -2,24 +2,24 @@ import itertools
 from typing import Dict, Tuple
 
 # Definições base das diretrizes para cada um dos polos do modelo Felder-Silverman.
-# Você pode editar os textos aqui para afinar a instrução que a LLM receberá.
+# Textos atualizados de acordo com as diretrizes do Especialista em Design Instrucional.
 
 DIRETRIZES = {
     "Processamento": {
-        "Ativo": "Inclua metodologias ativas: sugira exercícios práticos aplicados, debates simulados, e insira perguntas iterativas do tipo 'Como você usaria isso agora?'. O aluno precisa sentir que está colocando a mão na massa.",
-        "Reflexivo": "Adicione momentos de reflexão profunda. Insira perguntas abertas que estimulem análises individuais e instigue o aluno a pensar sobre o 'porquê' dos conceitos antes de entregar a resposta."
+        "Ativo": "Insira uma atividade de 'mão na massa' ou um desafio imediato para o aluno testar.",
+        "Reflexivo": "Insira perguntas instigantes que exijam pausa para análise profunda antes de prosseguir."
     },
     "Percepção": {
-        "Sensorial": "Apresente fatos concretos, fórmulas, dados empíricos, dicas do mundo prático e resoluções padronizadas de problemas. O aluno é pragmático e focado no que é real e testável.",
-        "Intuitivo": "Foque em conceitos abstratos, inovações, teorias subjacentes e conexões criativas. Evite muita repetição e vá direto para os princípios inovadores que sustentam o assunto."
+        "Sensorial": "Foque em aplicações práticas, exemplos do mundo real e dados concretos.",
+        "Intuitivo": "Priorize a teoria subjacente, modelos matemáticos e a inovação conceitual."
     },
     "Entrada": {
-        "Visual": "Como a saída será renderizada em MarkDown (leitura) por PDF, abuse intensamente de recursos visuais ortográficos: crie tabelas elaboradas, esquemas / árvores com caracteres `-` e `>`, blocos de citação, emojis ilustrativos e use formatação em texto (negrito e itálico) para dar cor e foco à leitura.",
-        "Verbal": "Desenvolva o texto com explicações verbais ricas. Construa uma excelente narrativa. O estudante prefere ler parágrafos bem fluidos que entreguem cada nuance e detalhe falado à exaustão."
+        "Visual": "Descreva como estruturar diagramas, mapas mentais ou fluxogramas. Use formatação que facilite a 'escaneabilidade'.",
+        "Verbal": "Utilize explicações textuais detalhadas, analogias narrativas e discussões teóricas."
     },
     "Compreensão": {
-        "Sequencial": "Estruture o guia em degraus estritos e perfeitamente lógicos. Vá do passo A ao B, evoluindo linearmente, sem pular níveis e sem tentar mostrar o fim antes de explicar o começo.",
-        "Global": "Inicie o texto IMEDIATAMENTE entregando o 'The Big Picture' (o Grande Resumo ou a Visão Crítica). Mostre toda a floresta antes de focar nas árvores, destacando como essa matéria isolada se conecta com o plano e o universo maior da aprendizagem."
+        "Sequencial": "Apresente o conteúdo em uma trilha linear, passo a passo, garantindo que cada etapa dependa da anterior.",
+        "Global": "Comece apresentando o objetivo macro e a utilidade final do conceito antes de mergulhar nos detalhes."
     }
 }
 
@@ -50,24 +50,33 @@ def gerar_16_prompts() -> Dict[Tuple[str, str, str, str], str]:
         chave_tupla = (proc, perc, ent, comp)
         
         # Constrói o template base formatado exclusivamente para essa combinação exata
-        prompt_especifico = f"""Você é um Tutor Professor Mestre Especialista em Pedagogia e Adaptação de Materiais Didáticos Baseados no modelo de Felder-Silverman.
+        prompt_especifico = f"""# Role: Especialista em Design Instrucional e Teoria de Felder-Silverman
 
-Aja considerando obrigatoriamente que ALUNO PARA O QUAL VOCÊ ESTÁ ESCREVENDO possui o perfil exato:
-[{proc}, {perc}, {ent}, {comp}]
+## Contexto
+Sou um professor universitário e preciso adaptar um conteúdo técnico para um aluno com um perfil de aprendizagem específico, baseado no Index of Learning Styles (ILS).
 
-Sua missão é reescrever o texto base fornecido pela disciplina, aplicando o 'fine tuning' pontual para que os canais neurológicos deste estudante específico o absorvam com o mínimo atrito cognitivo.
+## Dados do Aluno (Perfil FSLM)
+- **Processamento:** {proc}
+- **Percepção:** {perc}
+- **Entrada:** {ent}
+- **Compreensão:** {comp}
 
-Para este prompt específico, APLIQUE AS 4 REGRAS ABAIXO na arquitetura da sua reescrita:
+## Instruções de Adaptação (Diretrizes Teóricas)
+Utilize as seguintes restrições baseadas nos polos de Felder e Silverman para este aluno:
 
-1. [{proc}]: {DIRETRIZES["Processamento"][proc]}
-2. [{perc}]: {DIRETRIZES["Percepção"][perc]}
-3. [{ent}]: {DIRETRIZES["Entrada"][ent]}
-4. [{comp}]: {DIRETRIZES["Compreensão"][comp]}
+1. **Eixo de Percepção ({perc}):**
+   - {DIRETRIZES["Percepção"][perc]}
+2. **Eixo de Entrada ({ent}):**
+   - {DIRETRIZES["Entrada"][ent]}
+3. **Eixo de Processamento ({proc}):**
+   - {DIRETRIZES["Processamento"][proc]}
+4. **Eixo de Compreensão ({comp}):**
+   - {DIRETRIZES["Compreensão"][comp]}
 
-Adapte as palavras, a diagramação e a abordagem do conteúdo original, MANTENDO o rigor técnico.
+## Formato de Saída
+Gere o conteúdo estruturado em Markdown. Use blocos de código para exemplos técnicos e fórmulas matemáticas em texto simples ou notação Markdown padrão (ex: `O(n^2)` ou `2^n`).
 
----
-CONTEÚDO ORIGINAL A SER ADAPTADO:
+## Conteúdo a ser Adaptado
 {{conteudo_bruto}}
 """
         prompts_16[chave_tupla] = prompt_especifico.strip()
@@ -80,7 +89,7 @@ PROMPTS_ESPECIFICOS = gerar_16_prompts()
 if __name__ == "__main__":
     # Teste para listar e comprovar a existência dos 16 prompts formatados
     for perfil, prompt_text in PROMPTS_ESPECIFICOS.items():
-        print(f"\n======================================")
+        print(f"\\n======================================")
         print(f"PERFIL: {perfil}")
         print(f"--- PREVIEW DO PROMPT ---")
-        print(prompt_text[:400] + "...\n")
+        print(prompt_text[:400] + "...\\n")

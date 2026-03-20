@@ -47,6 +47,17 @@ def limpar_markdown(texto: str) -> str:
     texto = re.sub(r'\*(.+?)\*',     r'\1', texto)
     texto = re.sub(r'`(.+?)`',       r'\1', texto)
     texto = re.sub(r'^#{1,6}\s+', '', texto, flags=re.MULTILINE)
+    
+    # Limpa Emojis e Ícones: A biblioteca FPDF tem muita dificuldade de renderizar emojis 
+    # ou ícones malucos das IAs (mesmo usando a fonte DejaVu).
+    # Filtro: qualquer caractere com código acima de U+2500 (emojis, hieróglifos, shapes matemáticos)
+    texto = "".join(c for c in texto if ord(c) < 0x2500)
+    
+    # Previne o FPDFException ("Not enough horizontal space") injetando espaços em 
+    # palavras/textos massivos e ininterruptos maiores que 45 caracteres (URLs longas, 
+    # ou linhas formatadas com "----" largas construídas pela LLM)
+    texto = re.sub(r'([^\s]{45})', r'\1 ', texto)
+    
     return texto
 
 
@@ -124,7 +135,7 @@ def gerar_pdf(
 
         # H1
         if linha_strip.startswith("# "):
-            texto = linha_strip[2:].strip()
+            texto = limpar_markdown(linha_strip[2:].strip())
             pdf.set_font("DejaVu", "B", 16)
             pdf.set_text_color(26, 26, 46)
             pdf.ln(4)
@@ -136,7 +147,7 @@ def gerar_pdf(
 
         # H2
         elif linha_strip.startswith("## "):
-            texto = linha_strip[3:].strip()
+            texto = limpar_markdown(linha_strip[3:].strip())
             pdf.set_font("DejaVu", "B", 13)
             pdf.set_text_color(74, 144, 217)
             pdf.ln(3)
@@ -145,7 +156,7 @@ def gerar_pdf(
 
         # H3
         elif linha_strip.startswith("### "):
-            texto = linha_strip[4:].strip()
+            texto = limpar_markdown(linha_strip[4:].strip())
             pdf.set_font("DejaVu", "B", 11)
             pdf.set_text_color(51, 51, 51)
             pdf.ln(2)
@@ -190,7 +201,15 @@ def gerar_pdf(
             texto = limpar_markdown(linha_strip)
             pdf.set_font("DejaVu", "", 11)
             pdf.set_text_color(45, 45, 45)
-            pdf.multi_cell(0, 7, texto)
+            try:
+                pdf.multi_cell(0, 7, texto)
+            except Exception as e:
+                print(f"[DEBUG FPDF ERROR] X: {pdf.get_x()}, MargemL: {pdf.l_margin}, MargemR: {pdf.r_margin}")
+                print(f"[DEBUG FPDF TEXTO] {repr(texto)}")
+                # Força retorno do cursor para reiniciar margem X caso tenha estourado
+                pdf.set_x(pdf.l_margin)
+                pdf.ln(4)
+                
             pdf.ln(1)
 
     pdf.output(caminho_pdf)
