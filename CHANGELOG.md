@@ -1,5 +1,14 @@
 # Histórico do Projeto (Changelog)
 
+## [2026-03-23] - Limpeza de Código e Consolidação do Gemini
+### Adicionado
+- **Prevenção de Cache Residual**: Adicionado comando no `main.py` para exclusão forçada do arquivo `conteudo.md` pré-existente antes da extração de um novo PDF, impedindo contaminação de sessões e memórias estáticas.
+- **Documentação Master**: O `README.md` foi inteiramente reescrito e documentado para refletir as inclusões modernas (16 prompts isolados do FSLM e a utilização maciça de roteamento com `llm_config.py`).
+
+### Removido
+- Função `_selecionar_llm()` do `main.py`. A decisão do projeto foi engessar e apostar inteiramente no processamento universal com o Google Gemini. 
+- Remoção definitiva de chamadas a arquivos não rastreados ou defasados (como o antigo `assuntos_llm.py`).
+
 ## [2026-03-20] - Limpeza de Dependências, 16 Prompts Matemáticos e Fluxo Completo Ativo
 ### Adicionado
 - **Arquitetura de Prompts Isolados**: Criado o módulo `prompts_adaptacao.py` que gera precisamente 16 combinações de prompts exatos e fechados, cobrindo todo o modelo Felder-Silverman. Isso possibilita ao sistema escolher matematicamente a instrução perfeita baseada na tupla do aluno sem escrever enormes templates redundantes em `rewrite.py`.
