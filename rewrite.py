@@ -2,7 +2,7 @@
 # Adaptação do material didático ao perfil de aprendizagem do aluno
 
 import time
-from llm_config import criar_modelo
+from gemini_config import criar_modelo
 from prompts_adaptacao import PROMPTS_ESPECIFICOS
 
 def adaptar_material(perfil: str, dimensoes: dict, assunto: str, texto: str) -> str:

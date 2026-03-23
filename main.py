@@ -1,26 +1,22 @@
 import os
 
 # main.py
-import llm_config  # Deve ser importado ANTES dos módulos que usam criar_modelo
+from questionario import aplicar_questionario, mapear_dimensoes, exibir_resultado
+from profiler import get_student_profile
+from leitor_pdf import converter_pdf_para_md
+from rewrite import adaptar_material
+from gerador_pdf import gerar_pdf
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CAMINHO_PDF = os.path.join(BASE_DIR, "disciplina.pdf")
-
+CAMINHO_PDF = os.path.join(BASE_DIR, "disciplina.pdf")  # <--- Apontando para o PDF NOVO!
 
 
 if __name__ == "__main__":
+    
 
-    # ── Etapa 0: Configuração de LLM Padrão ───────────────────
-    provider = "gemini"
-    llm_config.set_provider(provider)
+    # A API é configurada automaticamente no gemini_config.py
 
-    # Importações tardias: só após definir o provedor
-    from questionario import aplicar_questionario, mapear_dimensoes, exibir_resultado
-    from profiler import get_student_profile
-    from leitor_pdf import converter_pdf_para_md
-    from rewrite import adaptar_material
-    from gerador_pdf import gerar_pdf
-
+    
     # ── Etapa 1: Questionário JÁ TESTADO
     respostas = aplicar_questionario()
     dimensoes = mapear_dimensoes(respostas)

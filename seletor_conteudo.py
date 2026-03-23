@@ -1,7 +1,7 @@
 # seletor_conteudo.py
 import json
 from typing import List, Dict
-from llm_config import criar_modelo
+from gemini_config import criar_modelo
 
 def buscar_assuntos_com_llm(texto_completo: str) -> List[Dict]:
     """

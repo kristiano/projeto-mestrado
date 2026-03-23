@@ -5,7 +5,7 @@
 # descrição humanizada do perfil do aluno.
 
 import time
-from llm_config import criar_modelo, QuotaExceededError
+from gemini_config import criar_modelo, QuotaExceededError
 
 
 def get_student_profile(respostas, dimensoes):

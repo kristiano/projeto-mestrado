@@ -44,3 +44,36 @@
 ### [2026-03-20 02:29] Commit e versionamento
 - **Sua Solicitação:** "faça o commit"
 - **Minha Ação:** Executei `git add .` e criei o primeiro commit comissionando nossos Refinamentos de Prompts e Escudos FPDF. E neste instante também atualizei esta mesmíssima linha neste log, que acabei de disparar atrelada ao comando histórico (usando o `git commit --amend` para empacotar tudo no mesmo baú).
+
+---
+## Sessão: 22 de Março de 2026
+
+### [2026-03-22 01:03] Dúvida sobre a Origem dos Assuntos Gerados pela LLM
+- **Sua Pergunta:** "Esse assunto listado pela LLM não condiz com o arquivo que foi lido, você está extraindo essa informação da memória ou do arquivo .md?"
+- **Minha Resposta:** Confirmei que a LLM extrai as informações **estritamente do arquivo `.md`** (`conteudo.md`). Expliquei o fluxo do código (`main.py` repassa todo o texto convertido do PDF para `seletor_conteudo.py`, que o injeta como contexto para a LLM). Verifiquei que o `conteudo.md` atual aborda "HTML e CSS" (extraído de `disciplina.pdf`). Sugeri que se o tema desejado fosse outro, a constante de arquivo alvo em `main.py` precisaria ser atualizada (por exemplo, apontando para `disciplina1.pdf`).
+- **Minha Ação:** Adicionei este registro ao `historico.md` conforme solicitado e manterei este acompanhamento para as próximas interações deste chat.
+
+### [2026-03-22 01:05] Decisão de Manter o Fluxo Original
+- **Sua Ação:** Solicitou que eu deixasse as configurações do arquivo atual como estão (`disciplina.pdf`), decidindo rodar o código novamente para observar o comportamento.
+- **Minha Ação:** Registrei essa sua decisão no histórico e me coloquei à disposição para ajudar, caso ocorram erros durante a nova execução.
+
+---
+## Sessão: 23 de Março de 2026
+
+### [2026-03-23 11:04] Atualização da Documentação (README)
+- **Sua Pergunta:** "o readme foi atualizado com todas as alterações e mudança de nomes dos arquivos?"
+- **Minha Resposta e Ação:** Analisei `README.md` e a estrutura de arquivos e notei que a documentação estava desatualizada. Faltava mencionar `llm_config.py` e `prompts_adaptacao.py`, e ainda havia menção ao extinto `assuntos_llm.py`. A seu pedido ("sim e faça o commit"), reescrevi todo o `README.md` atualizando a arquitetura, o fluxo de LLM, e fiz o commit no Git.
+
+### [2026-03-23 11:29] Verificação de Funções Órfãs
+- **Sua Pergunta:** "verifique o main.py, veja se há chamados a funções que não existem mais"
+- **Minha Ação:** Li e cruzei linha por linha o `main.py` com os módulos importados (`questionario.py`, `profiler.py`, `leitor_pdf.py`, `rewrite.py`, `gerador_pdf.py` e `seletor_conteudo.py`). Confirmei que todas as funções chamadas existem perfeitamente e possuem assinaturas válidas. 
+
+### [2026-03-23 11:30] Dúvida sobre Seleção de LLM e Limpeza de Código
+- **Sua Pergunta:** "me explique a função _selecionar_llm"
+- **Minha Resposta:** Expliquei que era uma função interativa de terminal para escolha entre GPT e Gemini, mas que estava comentada e inoperante no fluxo atual.
+- **Sua Ação:** "remova essa função, não vamos mais usar. Pois, vamos usar somente o gemini"
+- **Minha Ação:** Usei as ferramentas para apagar a função `_selecionar_llm` do `main.py` e limpar o cabeçalho de inicialização para forçar o `"gemini"` de forma primária no código. A seu pedido, efetuei o registro no Git (`commit`).
+
+### [2026-03-23 19:26] Registro no Histórico
+- **Sua Solicitação:** "adicione toda a nossa interação nesse chat no arquivo historico.md"
+- **Minha Ação:** Li o documento e adicionei em texto este consolidado de interações da nossa sessão do dia 23 de Março listando todas as refatorações.
