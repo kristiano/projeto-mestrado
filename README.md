@@ -26,7 +26,7 @@ Este sistema adapta automaticamente o conteúdo de uma disciplina universitária
 
 O fluxo completo é:
 
-1. O usuário escolhe no terminal qual LLM prefere utilizar (GPT da OpenAI ou Gemini do Google).
+1. O sistema inicia e carrega nativamente as configurações do modelo Gemini do Google.
 2. O aluno responde a um **questionário** interativo de 4 perguntas.
 3. A **IA** gera um perfil textual humanizado personalizado.
 4. O sistema converte o **PDF da disciplina** em Markdown.
@@ -41,15 +41,14 @@ O fluxo completo é:
 ```
 main.py
 │
-├─► llm_config.py          → Gerencia o roteamento dinâmico entre LLMs (GPT e Gemini)
+├─► gemini_config.py       → Configura a SDK do Google Gemini com retry automático
 ├─► questionario.py        → Coleta as respostas e mapeia as dimensões Felder-Silverman
 ├─► profiler.py            → Gera o perfil textual do aluno via LLM
 ├─► leitor_pdf.py          → Extrai capítulos do PDF da disciplina e converte para Markdown
 ├─► seletor_conteudo.py    → Aciona a LLM para ler o Markdown, listar os assuntos e o aluno escolher
 ├─► prompts_adaptacao.py   → Fornece os 16 prompts dinâmicos baseados nas dimensões de Felder-Silverman
-├─► rewrite.py             → Adapta o conteúdo ao perfil via LLM escolhida
-├─► gerador_pdf.py         → Gera o PDF final formatado contendo capa, estilos e numeração
-└─► gemini_config.py       → Configura a SDK do Gemini com retry automático
+├─► rewrite.py             → Adapta o conteúdo ao perfil via LLM (Gemini)
+└─► gerador_pdf.py         → Gera o PDF final formatado contendo capa, estilos e numeração
 ```
 
 ### Modelo de Estilos de Aprendizagem (Felder-Silverman)
@@ -69,9 +68,8 @@ main.py
 [Início]
     │
     ▼
-[Etapa 0 – Inicialização e Seleção da LLM]
-    O usuário seleciona (a) GPT ou (b) GEMINI.
-    O módulo llm_config.py define a provedora da sessão.
+[Etapa 0 – Inicialização]
+    A API é configurada automaticamente usando o módulo gemini_config.py.
     │
     ▼
 [Etapa 1 – Questionário]
@@ -90,7 +88,7 @@ main.py
     ▼
 [Etapa 2 – Adaptação (LLM e Prompts)]
     Identifica o prompt em prompts_adaptacao.py com base nos 4 polos mapeados
-    Envia perfil + dimensões + texto original à LLM escolhida
+    Envia perfil + dimensões + texto original à LLM (Gemini)
     Recebe o conteúdo reescrito e personalizado
     │
     ▼
@@ -105,8 +103,6 @@ main.py
 
 ## Módulos
 
-### `llm_config.py` – Roteamento de Modelos
-Encapsula as chamadas de inicialização do GPT (`openai`) e do Gemini (`google-generativeai`), permitindo padronizar o retorno e realizar chamadas modulares. Centraliza qual IA está ativa na sessão corrente.
 
 ### `gemini_config.py` – Configuração Específica do Gemini
 - Carrega a `GEMINI_API_KEY`.
@@ -148,7 +144,6 @@ pip install -r requirements.txt
 
 Principais pacotes:
 - `google-generativeai` (SDK do Gemini)
-- `openai` (SDK do GPT)
 - `pdfplumber` (Leitura do PDF)
 - `fpdf2` (Geração do PDF de saída)
 - `python-dotenv` (Variáveis de ambiente)
@@ -164,7 +159,6 @@ Crie o arquivo `.env` na raiz do projeto com as suas chaves de API:
 
 ```env
 GEMINI_API_KEY=sua_chave_gemini_aqui
-OPENAI_API_KEY=sua_chave_openai_aqui
 ```
 
 ### 2. PDF da Disciplina
@@ -184,7 +178,7 @@ cd /Users/skyneton/krf-docs/UFMA/MESTRADO\ COMPUTAÇÃO/2026/projeto
 python main.py
 ```
 
-O sistema irá guiá-arlo passo a passo: escolha do banco LLM que gerenciará o chat, questionário de estilo, extração das ementas do PDF via prompt, e finalmente gerará um ebook.
+O sistema irá guiá-lo passo a passo: questionário de estilo, extração e parse automático de ementas do PDF via IA, e finalmente gerará um ebook sob medida.
 
 O arquivo PDF será salvo em:
 ```
@@ -198,9 +192,8 @@ materiais_gerados/material_YYYYMMDD_HHMMSS.pdf
 ```
 projeto/
 │
-├── main.py                  # Ponto de entrada (Inicialização e menu GPT/Gemini)
-├── llm_config.py            # Roteamento e wrapper amigável OpenAI <=> Google AI
-├── gemini_config.py         # Utils do Gemini (Retry e validação)
+├── main.py                  # Ponto de entrada e orquestração do programa
+├── gemini_config.py         # Utils de conexão do Gemini (Retry e validação)
 ├── questionario.py          # Lógica do chat CLI de perguntas limitadas (FS)
 ├── profiler.py              # Consolida resposta e aciona LLM para humanizá-la
 ├── leitor_pdf.py            # Transforma as laudas de pdf em MD puro e cru
@@ -223,6 +216,5 @@ projeto/
 
 ## Limitações e Observações
 
-- **Cota da API Gemini (Free Tier):** O plano gratuito permite algumas dezenas de requisições por dia. O módulo `gemini_config.py` tem tratativas para reconexão; estourando os limites, você receberá erro.
-- **Custos do GPT:** Caso use GPT (`openai`), certifique-se de ter créditos pré-pagos ou uma conta API ativa na OpenAI (os custos serão atrelados à conta do seu projeto baseado na chave API inserida).
+- **Cota da API Gemini (Free Tier):** O plano gratuito permite algumas dezenas de requisições por dia. O módulo `gemini_config.py` tem tratativas para reconexão; estourando os limites, você receberá um erro de limites esgotados (QuotaExceeded).
 - **Fontes DejaVu:** O projeto usa o `matplotlib` puro e simples para referenciar as fontes abertas no FPDF. Dependendo de como você tiver instalado seu Python env, os paths em `gerador_pdf.py` podem necessitar alteração!
