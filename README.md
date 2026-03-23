@@ -26,12 +26,13 @@ Este sistema adapta automaticamente o conteúdo de uma disciplina universitária
 
 O fluxo completo é:
 
-1. O aluno responde a um **questionário** de 4 perguntas.
-2. A **IA (Gemini)** gera um perfil textual personalizado.
-3. O sistema lê e extrai capítulos do **PDF da disciplina**.
-4. O aluno escolhe o **assunto** que deseja estudar.
-5. A IA **reescreve o conteúdo** adaptado ao perfil do aluno.
-6. Um **PDF formatado** é gerado com o material personalizado.
+1. O usuário escolhe no terminal qual LLM prefere utilizar (GPT da OpenAI ou Gemini do Google).
+2. O aluno responde a um **questionário** interativo de 4 perguntas.
+3. A **IA** gera um perfil textual humanizado personalizado.
+4. O sistema converte o **PDF da disciplina** em Markdown.
+5. A LLM examina todo o texto e sugere **assuntos/tópicos** para o aluno estudar.
+6. A IA **reescreve o conteúdo** adaptado com base em 16 prompts sistêmicos especializados para o perfil do aluno.
+7. Um **PDF formatado** é gerado com o material personalizado.
 
 ---
 
@@ -40,14 +41,15 @@ O fluxo completo é:
 ```
 main.py
 │
-├─► questionario.py      → Coleta as respostas e mapeia as dimensões
-├─► profiler.py          → Gera o perfil textual do aluno via LLM
-├─► leitor_pdf.py        → Extrai capítulos do PDF da disciplina
-├─► assuntos_llm.py      → Fallback: usa LLM para sugerir tópicos
-├─► seletor_conteudo.py  → Permite ao aluno escolher o capítulo
-├─► rewrite.py           → Adapta o conteúdo ao perfil via LLM
-├─► gerador_pdf.py       → Gera o PDF final formatado
-└─► gemini_config.py     → Configura a SDK do Gemini com retry automático
+├─► llm_config.py          → Gerencia o roteamento dinâmico entre LLMs (GPT e Gemini)
+├─► questionario.py        → Coleta as respostas e mapeia as dimensões Felder-Silverman
+├─► profiler.py            → Gera o perfil textual do aluno via LLM
+├─► leitor_pdf.py          → Extrai capítulos do PDF da disciplina e converte para Markdown
+├─► seletor_conteudo.py    → Aciona a LLM para ler o Markdown, listar os assuntos e o aluno escolher
+├─► prompts_adaptacao.py   → Fornece os 16 prompts dinâmicos baseados nas dimensões de Felder-Silverman
+├─► rewrite.py             → Adapta o conteúdo ao perfil via LLM escolhida
+├─► gerador_pdf.py         → Gera o PDF final formatado contendo capa, estilos e numeração
+└─► gemini_config.py       → Configura a SDK do Gemini com retry automático
 ```
 
 ### Modelo de Estilos de Aprendizagem (Felder-Silverman)
@@ -67,6 +69,11 @@ main.py
 [Início]
     │
     ▼
+[Etapa 0 – Inicialização e Seleção da LLM]
+    O usuário seleciona (a) GPT ou (b) GEMINI.
+    O módulo llm_config.py define a provedora da sessão.
+    │
+    ▼
 [Etapa 1 – Questionário]
     Coleta 4 respostas (a/b) → mapeia dimensões → exibe perfil inicial
     │
@@ -75,19 +82,15 @@ main.py
     Gera descrição textual humanizada do perfil do aluno
     │
     ▼
-[Etapa 2 – Leitura do PDF]
-    Tenta extrair capítulos via sumário numerado
-    Se falhar → tenta via cabeçalhos "CAPÍTULO X"
-    Se ainda falhar → chama LLM para sugerir tópicos (assuntos_llm.py)
+[Etapa 2 – Leitura do PDF e Seleção do Assunto]
+    Converte disciplina.pdf para conteudo.md
+    LLM analisa o MD para sugerir assuntos (seletor_conteudo.py)
+    Lista os capítulos/tópicos → aluno escolhe no terminal
     │
     ▼
-[Etapa 2 – Seleção do Assunto]
-    Lista os capítulos/tópicos → aluno escolhe
-    Salva conteúdo bruto em conteudo.md
-    │
-    ▼
-[Etapa 2 – Adaptação (LLM)]
-    Envia perfil + dimensões + texto original à LLM
+[Etapa 2 – Adaptação (LLM e Prompts)]
+    Identifica o prompt em prompts_adaptacao.py com base nos 4 polos mapeados
+    Envia perfil + dimensões + texto original à LLM escolhida
     Recebe o conteúdo reescrito e personalizado
     │
     ▼
@@ -102,131 +105,36 @@ main.py
 
 ## Módulos
 
-### `gemini_config.py` – Configuração do Gemini
+### `llm_config.py` – Roteamento de Modelos
+Encapsula as chamadas de inicialização do GPT (`openai`) e do Gemini (`google-generativeai`), permitindo padronizar o retorno e realizar chamadas modulares. Centraliza qual IA está ativa na sessão corrente.
 
-Responsável por:
-- Carregar a `GEMINI_API_KEY` do arquivo `.env`
-- Descobrir dinamicamente o modelo disponível que suporta `generateContent`
-- Aplicar **retry automático** com backoff incremental (15 s, 30 s, 45 s) em caso de cota excedida
-- Expor `QuotaExceededError` para tratamento externo
+### `gemini_config.py` – Configuração Específica do Gemini
+- Carrega a `GEMINI_API_KEY`.
+- Descobre dinamicamente o modelo disponível que suporta `generateContent`.
+- Aplica **retry automático** com backoff incremental.
+- Expõe `QuotaExceededError`.
 
-**Funções públicas:**
-
-| Função / Classe       | Descrição |
-|-----------------------|-----------|
-| `criar_modelo(system_instruction)` | Configura o Gemini e retorna um `GenerativeModel` pronto para uso |
-| `QuotaExceededError`  | Exceção lançada após esgotar todas as tentativas de retry |
-
----
-
-### `questionario.py` – Questionário de Estilos de Aprendizagem
-
-Aplica 4 perguntas (uma por dimensão do modelo Felder-Silverman) em modo interativo no terminal.
-
-**Funções públicas:**
-
-| Função | Descrição |
-|--------|-----------|
-| `aplicar_questionario()` | Exibe perguntas e coleta respostas `a`/`b`. Retorna dict `{dimensao: resposta}` |
-| `mapear_dimensoes(respostas)` | Converte respostas em rótulos textuais (ex.: `"Sequencial"`, `"Visual"`) |
-| `exibir_resultado(dimensoes)` | Exibe o resultado formatado no terminal |
-
----
+### `questionario.py` – Questionário de Aprendizagem
+Aplica as perguntas no terminal; coleta e avalia as respostas a/b; converte as respostas das dimensões nos polos do FSLM.
 
 ### `profiler.py` – Gerador de Perfil
-
-Usa a LLM para transformar as 4 dimensões em uma **descrição humanizada e personalizada** do perfil do aluno (3–4 frases).
-
-**Funções públicas:**
-
-| Função | Descrição |
-|--------|-----------|
-| `get_student_profile(respostas, dimensoes)` | Retorna string com o perfil de aprendizagem gerado pela LLM |
-
-Em caso de cota esgotada (`QuotaExceededError`), retorna uma mensagem de fallback e **não interrompe** o programa.
-
----
+Usa a LLM escolhida para transformar as 4 dimensões em uma **descrição humanizada e personalizada** (3–4 frases).
 
 ### `leitor_pdf.py` – Leitura e Extração do PDF
+Processa a extração de conteúdo nativo do `.pdf` limitando a quantidade de informação extraída desnecessariamente (cabeçalhos irritantes, etc) e transforma em log unificado `.md`.
 
-Extrai os capítulos do PDF da disciplina usando **três estratégias em cascata**:
+### `seletor_conteudo.py` – Seleção Interativa de Tópicos (via LLM)
+Aciona a IA para percorrer o `conteudo.md` gerado e fornecer uma lista formatada e estruturada de tópicos para o usuário escolher na CLI.
 
-1. **Sumário numerado** — detecta a seção "Sumário" e extrai capítulos do tipo `N Título ... pág`.
-2. **Cabeçalhos CAPÍTULO X** — percorre o corpo do PDF buscando padrão regex.
-3. **Fallback via LLM** (delegado a `assuntos_llm.py`) — caso as estratégias anteriores falhem.
-
-**Funções públicas:**
-
-| Função | Descrição |
-|--------|-----------|
-| `extrair_texto_pagina(pagina)` | Extrai texto de uma página filtrando rodapés |
-| `extrair_capitulos_do_sumario(texto_sumario)` | Parseia a lista de capítulos do sumário |
-| `extrair_conteudo_capitulos(caminho_pdf)` | Retorna `dict {título_do_capítulo: texto}` |
-
----
-
-### `assuntos_llm.py` – Identificação de Tópicos via LLM
-
-**Fallback** usado quando o PDF não possui sumário ou cabeçalhos identificáveis.
-
-Estratégia:
-1. Extrai amostra textual do PDF (até 40 páginas, 12 linhas/página, max 12.000 chars).
-2. Envia à LLM para sugestão de 3–8 tópicos em formato JSON.
-3. O aluno escolhe o tópico.
-4. Extrai do PDF as páginas que contêm as palavras-chave do tópico.
-
-**Funções públicas:**
-
-| Função | Descrição |
-|--------|-----------|
-| `localizar_assunto_com_llm(caminho_pdf)` | Retorna `(titulo, texto)` ou `None` em caso de falha/cancelamento |
-
----
-
-### `seletor_conteudo.py` – Seleção Interativa do Capítulo
-
-Exibe a lista de capítulos extraídos e permite ao aluno escolher um pelo número.
-
-**Funções públicas:**
-
-| Função | Descrição |
-|--------|-----------|
-| `selecionar_assunto(capitulos)` | Retorna `(nome_do_capitulo, texto_do_capitulo)` |
-
----
+### `prompts_adaptacao.py` – Geração Dinâmica de 16 Prompts (FSLM)
+Responsável por gerar (previamente) os 16 combinados possíveis do modelo Felder-Silverman. Assegura a fidelidade das sub-diretrizes para orientar a requisição final da API sobre como o material modificado deve se parecer em sintaxe Markdown.
 
 ### `rewrite.py` – Adaptação do Material (LLM)
-
-Reescreve o conteúdo original do capítulo respeitando as diretrizes de cada dimensão do modelo Felder-Silverman. O texto gerado mantém precisão e completude, com estrutura organizada (títulos, subtítulos, resumo final).
-
-Envia ao modelo:
-- O perfil textual do aluno
-- As 4 dimensões mapeadas
-- O trecho do capítulo (limitado a 8.000 chars)
-
-**Funções públicas:**
-
-| Função | Descrição |
-|--------|-----------|
-| `adaptar_material(perfil, dimensoes, assunto, texto)` | Retorna o conteúdo adaptado como string Markdown |
-
----
+Importa o dicionário com 16 prompts de `prompts_adaptacao.py`, seleciona o prompt que se opõe ao perfil detectado e envia todos esses conjuntos estáticos junto à fatia crua da matéria selecionada. Recebe um estofamento de Markdown transformado e pronto para uso.
 
 ### `gerador_pdf.py` – Geração do PDF Final
-
-Gera um PDF formatado usando **fpdf2** com fonte DejaVu (suporte completo ao português).
-
-Recursos do PDF:
-- **Capa** com título do assunto e perfil do aluno destacado
-- **Cabeçalho e rodapé** com numeração de páginas
-- Suporte a Markdown: `#`, `##`, `###`, listas (`-`, `*`, `1.`), blockquotes (`>`)
-- Salva em `materiais_gerados/material_<timestamp>.pdf`
-
-**Funções públicas:**
-
-| Função | Descrição |
-|--------|-----------|
-| `gerar_pdf(material_adaptado, assunto, dimensoes, pasta_saida)` | Gera e salva o PDF, retorna o caminho do arquivo |
+Classe estendida em **fpdf2**:
+- Numeração automática, header, footer, capa estilizada e tratamento Unicode nativo com fonte DejaVu instalada no pacote `matplotlib`.
 
 ---
 
@@ -238,18 +146,13 @@ Instale com:
 pip install -r requirements.txt
 ```
 
-| Pacote            | Uso no projeto |
-|-------------------|----------------|
-| `google-generativeai` | SDK do Gemini (LLM) |
-| `google-api-core`     | Exceção `ResourceExhausted` |
-| `pdfplumber`          | Leitura e extração de texto do PDF |
-| `fpdf2`               | Geração do PDF de saída |
-| `python-dotenv`       | Leitura do arquivo `.env` |
-| `matplotlib`          | Apenas pelo caminho das fontes DejaVu |
-
-> **Obs.:** O projeto usa as fontes DejaVu instaladas junto ao `matplotlib` em
-> `/opt/anaconda3/lib/python3.12/site-packages/matplotlib/mpl-data/fonts/ttf`.
-> Se o caminho for diferente no seu ambiente, ajuste as constantes em `gerador_pdf.py`.
+Principais pacotes:
+- `google-generativeai` (SDK do Gemini)
+- `openai` (SDK do GPT)
+- `pdfplumber` (Leitura do PDF)
+- `fpdf2` (Geração do PDF de saída)
+- `python-dotenv` (Variáveis de ambiente)
+- `matplotlib` (Apenas pelo caminho das fontes DejaVu, necessário no fpdf2)
 
 ---
 
@@ -257,13 +160,12 @@ pip install -r requirements.txt
 
 ### 1. Arquivo `.env`
 
-Crie o arquivo `.env` na raiz do projeto com sua chave da API Gemini:
+Crie o arquivo `.env` na raiz do projeto com as suas chaves de API:
 
 ```env
-GEMINI_API_KEY=sua_chave_aqui
+GEMINI_API_KEY=sua_chave_gemini_aqui
+OPENAI_API_KEY=sua_chave_openai_aqui
 ```
-
-> Obtenha sua chave em: https://aistudio.google.com/app/apikey
 
 ### 2. PDF da Disciplina
 
@@ -273,23 +175,16 @@ Coloque o PDF da disciplina na raiz do projeto com o nome:
 disciplina.pdf
 ```
 
-O sistema funciona melhor com PDFs que possuem **sumário numerado** (ex: livros da Casa do Código).
-
 ---
 
 ## Como Executar
 
 ```bash
-cd /caminho/para/projeto
+cd /Users/skyneton/krf-docs/UFMA/MESTRADO\ COMPUTAÇÃO/2026/projeto
 python main.py
 ```
 
-O sistema irá:
-1. Exibir o questionário interativo no terminal
-2. Gerar seu perfil de aprendizagem
-3. Listar os capítulos/assuntos disponíveis
-4. Pedir para você escolher um assunto
-5. Adaptar o conteúdo e gerar o PDF personalizado
+O sistema irá guiá-arlo passo a passo: escolha do banco LLM que gerenciará o chat, questionário de estilo, extração das ementas do PDF via prompt, e finalmente gerará um ebook.
 
 O arquivo PDF será salvo em:
 ```
@@ -303,36 +198,31 @@ materiais_gerados/material_YYYYMMDD_HHMMSS.pdf
 ```
 projeto/
 │
-├── main.py                  # Ponto de entrada principal
-├── gemini_config.py         # Configuração e retry da API Gemini
-├── questionario.py          # Questionário Felder-Silverman (4 perguntas)
-├── profiler.py              # Geração do perfil do aluno via LLM
-├── leitor_pdf.py            # Extração de capítulos do PDF
-├── assuntos_llm.py          # Fallback: identificação de tópicos via LLM
-├── seletor_conteudo.py      # Seleção interativa do capítulo pelo aluno
-├── rewrite.py               # Adaptação do conteúdo via LLM
-├── gerador_pdf.py           # Geração do PDF final formatado
+├── main.py                  # Ponto de entrada (Inicialização e menu GPT/Gemini)
+├── llm_config.py            # Roteamento e wrapper amigável OpenAI <=> Google AI
+├── gemini_config.py         # Utils do Gemini (Retry e validação)
+├── questionario.py          # Lógica do chat CLI de perguntas limitadas (FS)
+├── profiler.py              # Consolida resposta e aciona LLM para humanizá-la
+├── leitor_pdf.py            # Transforma as laudas de pdf em MD puro e cru
+├── seletor_conteudo.py      # LLM lê o MD completo enumerando os tópicos extraídos para o usuário
+├── prompts_adaptacao.py     # Base de conhecimento sistêmica dos 16 sub-prompts exclusivos (FSLM)
+├── rewrite.py               # Requisita a IA aplicando o recorte técnico do material vs Perfil do aluno
+├── gerador_pdf.py           # Processamento e montagem final das laudas formatadas em PDF
 │
-├── disciplina.pdf           # PDF de entrada da disciplina
-├── conteudo.md              # Artefato intermediário: texto bruto do capítulo selecionado
+├── disciplina.pdf           # Documento de origem acadêmico
+├── conteudo.md              # Artefato intermediário criado pela leitura
 │
-├── materiais_gerados/       # PDFs gerados pelo sistema
+├── materiais_gerados/       # Onde os arquivos dinâmicos surgirão adaptados
 │   └── material_*.pdf
 │
-├── .env                     # Chave da API Gemini (não versionar!)
-└── README.md                # Esta documentação
+├── .env                     # Variáveis de sistema e das chaves LLM
+└── README.md                # Sumário central de arquitetura (você está aqui)
 ```
 
 ---
 
 ## Limitações e Observações
 
-- **Cota da API Gemini (Free Tier):** O plano gratuito permite 20 requisições/dia para `gemini-2.5-flash`. O sistema tenta retry automático (até 3 tentativas, 15/30/45 s de espera). Ao esgotar a cota, o `profiler.py` continua com perfil de fallback e o `rewrite.py` pode falhar.
-
-- **Tamanho do conteúdo:** O `rewrite.py` limita o texto enviado à LLM a **8.000 caracteres**. Para capítulos muito longos, somente o início será adaptado.
-
-- **Dependência do formato do PDF:** A extração automática de capítulos funciona melhor em PDFs com sumário estruturado. PDFs de slides, digitalizados (imagem) ou sem estrutura textual podem não ser suportados.
-
-- **Fontes DejaVu:** O caminho das fontes está fixo para o ambiente Anaconda. Ajuste `gerador_pdf.py` se necessário.
-
-- **Modelo Gemini selecionado dinamicamente:** O sistema usa o primeiro modelo disponível que suporte `generateContent`. Se desejar fixar um modelo específico, altere `criar_modelo()` em `gemini_config.py`.
+- **Cota da API Gemini (Free Tier):** O plano gratuito permite algumas dezenas de requisições por dia. O módulo `gemini_config.py` tem tratativas para reconexão; estourando os limites, você receberá erro.
+- **Custos do GPT:** Caso use GPT (`openai`), certifique-se de ter créditos pré-pagos ou uma conta API ativa na OpenAI (os custos serão atrelados à conta do seu projeto baseado na chave API inserida).
+- **Fontes DejaVu:** O projeto usa o `matplotlib` puro e simples para referenciar as fontes abertas no FPDF. Dependendo de como você tiver instalado seu Python env, os paths em `gerador_pdf.py` podem necessitar alteração!
