@@ -23,11 +23,12 @@ def adaptar_material(perfil: str, dimensoes: dict, assunto: str, texto: str) -> 
     start_time = time.time()
 
     # Identifica a chave correta baseada no perfil gerado para recuperar o prompt específico
+    # Ordem: (Compreensão, Percepção, Entrada, Processamento)
     chave_perfil = (
-        dimensoes["processamento"], 
+        dimensoes["compreensao"],
         dimensoes["percepcao"], 
         dimensoes["entrada"], 
-        dimensoes["compreensao"]
+        dimensoes["processamento"]
     )
     
     # Resgata o prompt de sistema exclusivo para as configurações neurais deste usuário

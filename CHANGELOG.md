@@ -5,6 +5,10 @@
 - **Prevenção de Cache Residual**: Adicionado comando no `main.py` para exclusão forçada do arquivo `conteudo.md` pré-existente antes da extração de um novo PDF, impedindo contaminação de sessões e memórias estáticas.
 - **Documentação Master**: O `README.md` foi inteiramente reescrito e documentado para refletir as inclusões modernas (16 prompts isolados do FSLM e a utilização maciça de roteamento com `llm_config.py`).
 
+### Alterado
+- **Simplificação Didática de Prompts**: O arquivo `prompts_adaptacao.py` foi completamente reescrito para abandonar os laços cartesianos complexos (itertools) e agora conta com todos os 16 estados da arquitetura Felder-Silverman descritos de maneira explícita, facilitando muito o entendimento acadêmico, estrutural e testes independentes de cada combinação.
+- **Tuplas do Rewrite**: A tupla de indexação das regras no `rewrite.py` foi recalibrada para `(Compreensão, Percepção, Entrada, Processamento)` adequando-se melhor a ordem lógica proposta para os prompts de ensino atualizados.
+
 ### Removido
 - Função `_selecionar_llm()` do `main.py`. A decisão do projeto foi engessar e apostar inteiramente no processamento universal com o Google Gemini. 
 - Remoção definitiva de chamadas a arquivos não rastreados ou defasados (como o antigo `assuntos_llm.py`).
