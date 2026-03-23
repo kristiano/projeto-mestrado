@@ -7,43 +7,11 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CAMINHO_PDF = os.path.join(BASE_DIR, "disciplina.pdf")
 
 
-def _selecionar_llm() -> str:
-    """
-    Exibe o menu de seleção de LLM e retorna o provedor escolhido ('gemini' ou 'gpt').
-    """
-    opcoes = {
-        "a": "gpt",
-        "1": "gpt",
-        "b": "gemini",
-        "2": "gemini",
-    }
-
-    print("\n" + "="*60)
-    print("   SISTEMA DE PERSONALIZAÇÃO DE MATERIAIS DIDÁTICOS")
-    print("="*60)
-    print("\n  Qual LLM você prefere nesta sessão?")
-    print("    a. GPT   (OpenAI)")
-    print("    b. GEMINI (Google)")
-    print()
-
-    while True:
-        escolha = input("  Sua escolha (a/b): ").strip().lower()
-        if escolha in opcoes:
-            provider = opcoes[escolha]
-            nome = "GPT (OpenAI)" if provider == "gpt" else "GEMINI (Google)"
-            print(f"\n  ✔ LLM selecionada: {nome}")
-            print("="*60)
-            return provider
-        print("  ⚠ Opção inválida. Digite 'a' para GPT ou 'b' para GEMINI.")
-
 
 if __name__ == "__main__":
 
-    # ── Etapa 0: Seleção da LLM ──────────────────────────────────
-    # provider = _selecionar_llm()
-    # Para usar somente Gemini por enquanto
+    # ── Etapa 0: Configuração de LLM Padrão ───────────────────
     provider = "gemini"
-    print("\n  ✔ LLM selecionada: GEMINI (Google) - Padrão temporário")
     llm_config.set_provider(provider)
 
     # Importações tardias: só após definir o provedor
