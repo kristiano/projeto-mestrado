@@ -1,6 +1,26 @@
-.env
-__pycache__/
+```
+# Compiled Python files
 *.pyc
-.DS_Store
-materiais_gerados/
-conteudo.md
+__pycache__/
+
+# Virtual environments
+venv/
+.venv/
+.env
+.env.local
+*.env.*
+
+# Logs
+*.log
+
+# Editor/IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+
+# Build/dist directories
+build/
+dist/
+```
